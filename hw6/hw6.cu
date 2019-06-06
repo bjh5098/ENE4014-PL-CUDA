@@ -29,7 +29,7 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 
     // out of bound
 
-    // CHANGE
+    // CHANGE //////////////////////////////////////////////////
 }
 
 __global__ void gemm(float *a, float *b, float *c, const float alpha, const float beta, float *output, const int input_size){
@@ -57,14 +57,14 @@ __global__ void gemm(float *a, float *b, float *c, const float alpha, const floa
     // multiple of TILE_WIDTH!
     // loop over the tiles of the input in phases
     for(int p = 0; p < input_size/TILE_WIDTH; ++p){
-        // CHANGE
+        // CHANGE //////////////////////////////////////////////////
 
         // You need to use __syncthreads() a few times
         // to synchronize the threads in a thread block.
     }
 
     // write out the result to output[row*input_size + col] 
-    // CHANGE
+    // CHANGE //////////////////////////////////////////////////
 }
 
 
