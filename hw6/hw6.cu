@@ -1,7 +1,3 @@
-/*
- * Find BLANK and replace your own code.
- * And submit report why do you replace the blank that way.
- */
 
 #include<stdlib.h>
 #include<iostream>
