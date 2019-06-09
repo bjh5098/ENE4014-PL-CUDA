@@ -24,7 +24,6 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
     int row = blockDim.y * blockIdx.y + threadIdx.y;
 
     // out of bound
-
     // CHANGE //////////////////////////////////////////////////
 }
 
