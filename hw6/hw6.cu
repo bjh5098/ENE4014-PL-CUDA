@@ -52,6 +52,7 @@ __global__ void gemm(float *a, float *b, float *c, const float alpha, const floa
     // multiple of TILE_WIDTH!
     // loop over the tiles of the input in phases
     for(int p = 0; p < input_size/TILE_WIDTH; ++p){
+        
         // CHANGE //////////////////////////////////////////////////
 
         // You need to use __syncthreads() a few times
