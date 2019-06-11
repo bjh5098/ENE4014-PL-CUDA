@@ -52,6 +52,7 @@ __global__ void gemm(float *a, float *b, float *c, const float alpha, const floa
 
     int tx = threadIdx.x, ty = threadIdx.y;
     int bx = blockIdx.x,  by = blockIdx.y;
+    int i = blockIdx.x * TILE_WIDTH, j = blockIdx.y * TILE_WIDTH;//add
 
     int row = by*blockDim.y + ty;
     int col = bx*blockDim.x + tx;
@@ -61,22 +62,46 @@ __global__ void gemm(float *a, float *b, float *c, const float alpha, const floa
     // allocate 2D tiles in __shared__ memory
     __shared__ float s_a[TILE_WIDTH][TILE_WIDTH];
     __shared__ float s_b[TILE_WIDTH][TILE_WIDTH];
+    __shared__ float s_c[TILE_WIDTH][TILE_WIDTH];
 
-    float result = 0;
+    float result = 0.0f;
 
     // make sure you handle the case when the matrix sizes are not
     // multiple of TILE_WIDTH!
     // loop over the tiles of the input in phases
-    for(int p = 0; p < input_size/TILE_WIDTH; ++p){
+    for(int p = 0; p < ceilf(input_size/TILE_WIDTH)+1; p++){
         
         // CHANGE //////////////////////////////////////////////////
+        s_a[ty][tx] = 0.0f; // to ignore uneffected values
 
+        // boundary check
+        if (row < input_size && (TILE_WIDTH * p + tx) < input_size) {
+            s_a[ty][tx] = a[row * input_size + TILE_WIDTH * p + tx];
+        }
+
+        s_b[ty][tx] = 0.0f; // to ignore uneffected values
+
+        // boundary check
+        if (col < input_size && (p * TILE_WIDTH + ty) < input_size) {
+            s_b[ty][tx] = b[(p * TILE_WIDTH + ty) * input_size + col];
+        }
+        __syncthreads(); // barrier
+
+        for (int j = 0; j<TILE_WIDTH; j++) {
+            result += s_a[ty][j] * s_b[j][tx]; // get tile sum for block
+        }
+        __syncthreads(); // barrier
         // You need to use __syncthreads() a few times
         // to synchronize the threads in a thread block.
     }
 
     // write out the result to output[row*input_size + col] 
     // CHANGE //////////////////////////////////////////////////
+    if (row < input_size && col < input_size) {
+        int index = (i + tx) + (j + ty)*input_size;
+        s_c[ty][tx] = c[index];
+        output[index] = alpha * result + beta * s_c[ty][tx];
+    }
 }
 
 
@@ -91,9 +116,9 @@ int main(int argc, char **argv) {
     const float beta = stof(argv[4]);
     const int maxpool_output_size = input_size/filter_size;//check
 
-    // check input_size is power of 2
+    // check input_size is power of 2 //16?
     if(input_size == 0 && (input_size & (input_size-1))){
-        cout << "input_size must be power of 2\n";
+        cout << "input_size must be power of 2\n";//16??
         return 1;
     }
 
