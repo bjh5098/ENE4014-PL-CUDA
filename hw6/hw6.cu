@@ -23,8 +23,24 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
     int col = blockDim.x * blockIdx.x + threadIdx.x;
     int row = blockDim.y * blockIdx.y + threadIdx.y;
 
+    int output_size = input_size / filter_size;
+
     // out of bound
-    // CHANGE //////////////////////////////////////////////////
+
+    if (col >= output_size || row >= output_size) { return; }
+    
+    // 2D to 1D : (row, col) -> (row * N) + col
+    float max_val = input[((row * filter_size) * input_size) + (col * filter_size)];
+
+    for (int i = row * filter_size; i < row * filter_size + filter_size; i++) {
+        for (int j = col * filter_size; j < col * filter_size + filter_size; j++) {
+            // update max_val if needed
+            max_val = fmaxf(max_val, input[(i * input_size) + j]);
+        }
+    }
+
+    // assign max value
+    output[(row * output_size) + col] = max_val;
 }
 
 __global__ void gemm(float *a, float *b, float *c, const float alpha, const float beta, float *output, const int input_size){
@@ -65,15 +81,15 @@ __global__ void gemm(float *a, float *b, float *c, const float alpha, const floa
 
 
 int main(int argc, char **argv) {
-    if(argc < 4) {
+    if(argc < 4) {//check
         cout << "usage : " << argv[0] << " input_size filter_size alpha beta\n" << "example : " << argv[0] << " 100 2 0.5 0.8\n";
         return 1;
     }
     const int input_size = stoi(argv[1]);
-    const int filter_size = stoi(argv[2]); // used for maxpooling
+    const int filter_size = stoi(argv[2]); // used for maxpooling//check
     const float alpha = stof(argv[3]);
     const float beta = stof(argv[4]);
-    const int maxpool_output_size = input_size/filter_size;
+    const int maxpool_output_size = input_size/filter_size;//check
 
     // check input_size is power of 2
     if(input_size == 0 && (input_size & (input_size-1))){
@@ -86,13 +102,13 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    float maxpool_input[input_size*input_size];
+    float maxpool_input[input_size*input_size]; // pointer?
     float a[input_size*input_size];
     float b[input_size*input_size];
     float c[input_size*input_size];
     
     // read input matrices 
-    ifstream input_in(MAXPOOL_INPUT_FILENAME);
+    ifstream input_in(MAXPOOL_INPUT_FILENAME); //check ifstream
     ifstream a_in(A_FILENAME);
     ifstream b_in(B_FILENAME);
     ifstream c_in(C_FILENAME);
@@ -110,7 +126,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i < input_size * input_size; ++i) {
         if(i%input_size==0) cout<<"\n";
         cout<<maxpool_input[i]<<" ";
-    }
+    }//check
     cout<<"\nalpha : "<<alpha<<'\n';
     cout<<"========== A ==========\n";
     for (int i = 0; i < input_size * input_size; ++i) {
@@ -128,11 +144,11 @@ int main(int argc, char **argv) {
         if(i%input_size==0) cout<<"\n";
         cout<<c[i]<<" ";
     }
-    cout<<'\n';
+    cout<<'\n';//check
        
     // set thread, block dimensions
     const dim3 block_size(TILE_WIDTH, TILE_WIDTH);
-    const dim3 num_of_maxpool_blocks(maxpool_output_size/block_size.x+1, maxpool_output_size/block_size.y+1);
+    const dim3 num_of_maxpool_blocks(maxpool_output_size/block_size.x+1, maxpool_output_size/block_size.y+1);//check
     const dim3 num_of_blocks(input_size/block_size.x+1, input_size/block_size.y+1);
 
     // memory allocation for the device
@@ -141,27 +157,27 @@ int main(int argc, char **argv) {
     cudaMalloc(&dev_mem_b, sizeof(float) * input_size * input_size);
     cudaMalloc(&dev_mem_c, sizeof(float) * input_size * input_size);
     cudaMalloc(&gemm_output, sizeof(float) * input_size * input_size);
-    cudaMalloc(&dev_mem_input, sizeof(float) * input_size * input_size);
-    cudaMalloc(&maxpool_output, sizeof(float) * maxpool_output_size * maxpool_output_size);
+    cudaMalloc(&dev_mem_input, sizeof(float) * input_size * input_size);//check
+    cudaMalloc(&maxpool_output, sizeof(float) * maxpool_output_size * maxpool_output_size);//check
     
     // copy variable to device memory
     cudaMemcpy(dev_mem_a, a, sizeof(float) * input_size * input_size, cudaMemcpyHostToDevice);
     cudaMemcpy(dev_mem_b, b, sizeof(float) * input_size * input_size, cudaMemcpyHostToDevice);
     cudaMemcpy(dev_mem_c, c, sizeof(float) * input_size * input_size, cudaMemcpyHostToDevice);
-    cudaMemcpy(dev_mem_input, maxpool_input, sizeof(float) * input_size * input_size, cudaMemcpyHostToDevice);
+    cudaMemcpy(dev_mem_input, maxpool_input, sizeof(float) * input_size * input_size, cudaMemcpyHostToDevice);//check
 
     // launch CUDA kernels
 
     // First launch gemm kernel
     gemm<<<num_of_blocks, block_size>>>(dev_mem_a, dev_mem_b, dev_mem_c, alpha, beta, gemm_output, input_size);
     cudaDeviceSynchronize();
-    cudaError_t error = cudaGetLastError();
+    cudaError_t error = cudaGetLastError();//check
     if(error!=cudaSuccess) {
         fprintf(stderr, "ERROR %s\n", cudaGetErrorString(error));
         return 1;
     }
  
-    // Then run maxpooling
+    // Then run maxpooling //check
     maxpool<<<num_of_maxpool_blocks, block_size>>>(dev_mem_input, maxpool_output, input_size, filter_size);
     cudaDeviceSynchronize();
     error = cudaGetLastError();
@@ -195,9 +211,9 @@ int main(int argc, char **argv) {
     cudaFree(dev_mem_b);
     cudaFree(dev_mem_c);
     cudaFree(gemm_output);
-    cudaFree(dev_mem_input);
-    cudaFree(maxpool_output);
+    cudaFree(dev_mem_input);//check
+    cudaFree(maxpool_output);//check
     free(gemm_output_buf);
-    free(maxpool_output_buf);
+    free(maxpool_output_buf);//check
     return 0;
 }
