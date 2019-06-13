@@ -5,7 +5,7 @@
 #include<vector>
 #include<string>
 
-#define TILE_WIDTH 16   /* set TILE_WIDTH 16 for the evaluation! */ //2???16??
+#define TILE_WIDTH 16   /* set TILE_WIDTH 16 for the evaluation! */ //2???16?? 16 is faster
 #define MAXPOOL_INPUT_FILENAME "input.txt"
 #define A_FILENAME "a.txt"
 #define B_FILENAME "b.txt"
@@ -34,11 +34,10 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
 
     for (int i = row * filter_size; i < row * filter_size + filter_size; i++) {
         for (int j = col * filter_size; j < col * filter_size + filter_size; j++) {
-            // update max_val if needed
+            // update max_val
             max_val = fmaxf(max_val, input[(i * input_size) + j]);
         }
     }
-
     // assign max value
     output[(row * output_size) + col] = max_val;
 }
