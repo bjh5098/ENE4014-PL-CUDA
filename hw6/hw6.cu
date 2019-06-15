@@ -26,7 +26,6 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
     int output_size = input_size / filter_size;
 
     // out of bound
-
     if (col >= output_size || row >= output_size) { return; }
     
     // 2D to 1D : (row, col) -> (row * N) + col
