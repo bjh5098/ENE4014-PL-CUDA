@@ -62,7 +62,7 @@ __global__ void gemm(float *a, float *b, float *c, const float alpha, const floa
     __shared__ float s_b[TILE_WIDTH][TILE_WIDTH];
     __shared__ float s_c[TILE_WIDTH][TILE_WIDTH];
 
-    float result = 0.0f;
+    float resultValue = 0.0f;
 
     // make sure you handle the case when the matrix sizes are not
     // multiple of TILE_WIDTH!
@@ -86,7 +86,7 @@ __global__ void gemm(float *a, float *b, float *c, const float alpha, const floa
         __syncthreads(); // barrier
 
         for (int j = 0; j<TILE_WIDTH; j++) {
-            result += s_a[ty][j] * s_b[j][tx]; // get tile sum for block
+            resultValue += s_a[ty][j] * s_b[j][tx]; // get tile sum for block
         }
         __syncthreads(); // barrier
         // You need to use __syncthreads() a few times
@@ -98,7 +98,7 @@ __global__ void gemm(float *a, float *b, float *c, const float alpha, const floa
     if (row < input_size && col < input_size) {
         int index = (i + tx) + (j + ty)*input_size;
         s_c[ty][tx] = c[index];
-        output[index] = alpha * result + beta * s_c[ty][tx];
+        output[index] = alpha * resultValue + beta * s_c[ty][tx];
     }
 }
 
