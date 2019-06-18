@@ -26,13 +26,18 @@ __global__ void maxpool(float *input, float *output, const int input_size, const
     int output_size = input_size / filter_size;
 
     // out of bound
-    if (col >= output_size || row >= output_size) { return; }
+    if (col >= output_size || row >= output_size)
+    {
+        return;
+    }
     
     // 2D to 1D : (row, col) -> (row * N) + col
     float max_val = input[((row * filter_size) * input_size) + (col * filter_size)];
 
-    for (int i = row * filter_size; i < row * filter_size + filter_size; i++) {
-        for (int j = col * filter_size; j < col * filter_size + filter_size; j++) {
+    for (int i = row * filter_size; i < row * filter_size + filter_size; i++)
+    {
+        for (int j = col * filter_size; j < col * filter_size + filter_size; j++)
+        {
             // update max_val
             max_val = fmaxf(max_val, input[(i * input_size) + j]);
         }
@@ -55,7 +60,9 @@ __global__ void gemm(float *a, float *b, float *c, const float alpha, const floa
     int row = by*blockDim.y + ty;
     int col = bx*blockDim.x + tx;
     
-    if(row>=input_size ||col>=input_size) { return; }
+    if(row>=input_size ||col>=input_size){
+        return;
+    }
     
     // allocate 2D tiles in __shared__ memory
     __shared__ float s_a[TILE_WIDTH][TILE_WIDTH];
@@ -67,25 +74,28 @@ __global__ void gemm(float *a, float *b, float *c, const float alpha, const floa
     // make sure you handle the case when the matrix sizes are not
     // multiple of TILE_WIDTH!
     // loop over the tiles of the input in phases
-    for(int p = 0; p < ceilf(input_size/TILE_WIDTH)+1; p++){
-        
+    for(int p = 0; p < ceilf(input_size/TILE_WIDTH)+1; p++)
+    {
         // CHANGE //////////////////////////////////////////////////
         s_a[ty][tx] = 0.0f; // to ignore uneffected values
 
         // boundary check
-        if (row < input_size && (TILE_WIDTH * p + tx) < input_size) {
+        if (row < input_size && (TILE_WIDTH * p + tx) < input_size)
+        {
             s_a[ty][tx] = a[row * input_size + TILE_WIDTH * p + tx];
         }
 
         s_b[ty][tx] = 0.0f; // to ignore uneffected values
 
         // boundary check
-        if (col < input_size && (p * TILE_WIDTH + ty) < input_size) {
+        if (col < input_size && (p * TILE_WIDTH + ty) < input_size)
+        {
             s_b[ty][tx] = b[(p * TILE_WIDTH + ty) * input_size + col];
         }
         __syncthreads(); // barrier
 
-        for (int j = 0; j<TILE_WIDTH; j++) {
+        for (int j = 0; j<TILE_WIDTH; j++)
+        {
             resultValue += s_a[ty][j] * s_b[j][tx]; // get tile sum for block
         }
         __syncthreads(); // barrier
@@ -95,7 +105,8 @@ __global__ void gemm(float *a, float *b, float *c, const float alpha, const floa
 
     // write out the result to output[row*input_size + col] 
     // CHANGE //////////////////////////////////////////////////
-    if (row < input_size && col < input_size) {
+    if (row < input_size && col < input_size)
+    {
         int index = (i + tx) + (j + ty)*input_size;
         s_c[ty][tx] = c[index];
         output[index] = alpha * resultValue + beta * s_c[ty][tx];
@@ -103,7 +114,8 @@ __global__ void gemm(float *a, float *b, float *c, const float alpha, const floa
 }
 
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     if(argc < 4) {//check
         cout << "usage : " << argv[0] << " input_size filter_size alpha beta\n" << "example : " << argv[0] << " 100 2 0.5 0.8\n";
         return 1;
@@ -115,12 +127,14 @@ int main(int argc, char **argv) {
     const int maxpool_output_size = input_size/filter_size;//check
 
     // check input_size is power of 2 //16?
-    if(input_size == 0 && (input_size & (input_size-1))){
+    if(input_size == 0 && (input_size & (input_size-1)))
+    {
         cout << "input_size must be power of 2\n";//16??
         return 1;
     }
 
-    if(filter_size == 0){
+    if(filter_size == 0)
+    {
         cout << "filter_size cannot be 0\n";
         return 1;
     }
@@ -136,7 +150,8 @@ int main(int argc, char **argv) {
     ifstream b_in(B_FILENAME);
     ifstream c_in(C_FILENAME);
 
-    for (int i = 0; i < input_size*input_size; ++i) {
+    for (int i = 0; i < input_size*input_size; ++i)
+    {
         input_in >> maxpool_input[i];
         a_in >> a[i];
         b_in >> b[i];
@@ -146,24 +161,28 @@ int main(int argc, char **argv) {
     // prints inputs for debugging.
     cout<<"filter size : "<<filter_size;
     cout<<"\n========== MAXPOOL_INPUT ==========\n";
-    for (int i = 0; i < input_size * input_size; ++i) {
+    for (int i = 0; i < input_size * input_size; ++i)
+    {
         if(i%input_size==0) cout<<"\n";
         cout<<maxpool_input[i]<<" ";
     }//check
     cout<<"\nalpha : "<<alpha<<'\n';
     cout<<"========== A ==========\n";
-    for (int i = 0; i < input_size * input_size; ++i) {
+    for (int i = 0; i < input_size * input_size; ++i)
+    {
         if(i%input_size==0) cout<<"\n";
         cout<<a[i]<<" ";
     }
     cout<<"\n========== B ==========\n";
-    for (int i = 0; i < input_size * input_size; ++i) {
+    for (int i = 0; i < input_size * input_size; ++i)
+    {
         if(i%input_size==0) cout<<"\n";
         cout<<b[i]<<" ";
     }
     cout<<"\nbeta : "<<beta<<'\n';
     cout<<"========== C ==========\n";
-    for (int i = 0; i < input_size * input_size; ++i) {
+    for (int i = 0; i < input_size * input_size; ++i)
+    {
         if(i%input_size==0) cout<<"\n";
         cout<<c[i]<<" ";
     }
@@ -195,7 +214,8 @@ int main(int argc, char **argv) {
     gemm<<<num_of_blocks, block_size>>>(dev_mem_a, dev_mem_b, dev_mem_c, alpha, beta, gemm_output, input_size);
     cudaDeviceSynchronize();
     cudaError_t error = cudaGetLastError();//check
-    if(error!=cudaSuccess) {
+    if(error!=cudaSuccess)
+    {
         fprintf(stderr, "ERROR %s\n", cudaGetErrorString(error));
         return 1;
     }
@@ -204,7 +224,8 @@ int main(int argc, char **argv) {
     maxpool<<<num_of_maxpool_blocks, block_size>>>(dev_mem_input, maxpool_output, input_size, filter_size);
     cudaDeviceSynchronize();
     error = cudaGetLastError();
-    if(error!=cudaSuccess) {
+    if(error!=cudaSuccess)
+    {
         fprintf(stderr, "ERROR %s\n", cudaGetErrorString(error));
         return 1;
     }
@@ -219,12 +240,14 @@ int main(int argc, char **argv) {
     
     // prints the results
     cout<<"\n========== GEMM OUTPUT ==========\n";
-    for (int i = 0; i < input_size * input_size; ++i) {
+    for (int i = 0; i < input_size * input_size; i++)
+    {
         if(i%input_size==0) cout<<"\n";
         cout<<gemm_output_buf[i]<<" ";
     }
     cout<<"\n========== MAXPOOL OUTPUT ==========\n";
-    for (int i = 0; i < maxpool_output_size * maxpool_output_size; ++i) {
+    for (int i = 0; i < maxpool_output_size * maxpool_output_size; i++)
+    {
         if(i%maxpool_output_size==0) cout<<"\n";
         cout<<maxpool_output_buf[i]<<" ";
     }
@@ -238,5 +261,6 @@ int main(int argc, char **argv) {
     cudaFree(maxpool_output);//check
     free(gemm_output_buf);
     free(maxpool_output_buf);//check
+
     return 0;
 }
